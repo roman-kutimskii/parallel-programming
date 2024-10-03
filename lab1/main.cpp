@@ -56,7 +56,6 @@ int main(const int argc, char *argv[]) {
         }
     }
 
-
     WaitForMultipleObjects(numThreads, threads.data(), TRUE, INFINITE);
 
     for (const HANDLE &thread: threads) {
