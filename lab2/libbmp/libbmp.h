@@ -36,8 +36,10 @@ struct RGB {
     uint8_t red;
 };
 
-void readBMP(const std::string &filename, int32_t &width, int32_t &height, std::vector<RGB> &pixels);
+using Image = std::vector<std::vector<RGB> >;
 
-void writeBMP(const std::string &filename, int32_t width, int32_t height, const std::vector<RGB> &pixels);
+void readBMP(const std::string &filename, int32_t &width, int32_t &height, Image &pixels);
+
+void writeBMP(const std::string &filename, int32_t width, int32_t height, const Image &pixels);
 
 #endif // LIBBMP_H

@@ -1,8 +1,9 @@
+#include <chrono>
 #include <iostream>
 #include <vector>
 
+#include "blur/blur.h"
 #include "libbmp/libbmp.h"
-
 
 int main(int argc, char *argv[]) {
     if (argc != 5) {
@@ -12,10 +13,18 @@ int main(int argc, char *argv[]) {
     }
 
     int width, height;
-    std::vector<RGB> pixels;
+    Image pixels;
+
+    auto start = std::chrono::high_resolution_clock::now();
 
     readBMP(argv[3], width, height, pixels);
-    writeBMP(argv[4], width, height, pixels);
+    Image blurredImage = applyGaussianBlur(pixels, 20, 100);
+    writeBMP(argv[4], width, height, blurredImage);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
 
     return 0;
 }
