@@ -3,4 +3,5 @@ project(parallel_programming)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(parallel_programming main.cpp)
+add_executable(lab1 lab1/main.cpp)
+add_subdirectory(lab2)
