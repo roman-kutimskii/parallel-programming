@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 
         threadData[i].inputImage = &sourceImagePieces[i];
         threadData[i].outputImage = &blurredImagePieces[i];
-        threadData[i].kernelSize = 20;
+        threadData[i].kernelSize = 50;
         threadData[i].sigma = 100.0;
 
         threads[i] = CreateThread(nullptr, 0, BlurThread, &threadData[i], CREATE_SUSPENDED, nullptr);
@@ -84,8 +84,8 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < numThreads; ++i) {
         int startRow = i * rowsPerThread;
-        for (int j = 0; j < threadData[i].outputImage->size(); ++j) {
-            blurredImage[startRow + j] = (*threadData[i].outputImage)[j];
+        for (int j = 0; j < blurredImagePieces[i].size(); ++j) {
+            blurredImage[startRow + j] = blurredImagePieces[i][j];
         }
     }
 
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
-    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
+    std::cout << numCores << "\t" << numThreads << "\t" << elapsed.count() << std::endl;
 
     return 0;
 }
