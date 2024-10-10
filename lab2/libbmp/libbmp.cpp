@@ -1,5 +1,8 @@
 #include "libbmp.h"
 
+#include <fstream>
+#include <iostream>
+
 void readBMP(const std::string &filename, int32_t &width, int32_t &height, std::vector<std::vector<RGB> > &pixels) {
     std::ifstream file(filename, std::ios::binary);
     if (!file) {

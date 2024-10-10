@@ -1,21 +1,37 @@
 #include <chrono>
+#include <cmath>
 #include <iostream>
-#include <vector>
 #include <windows.h>
 
 #include "blur/blur.h"
 #include "libbmp/libbmp.h"
 
 struct ThreadData {
-    const Image *inputImage;
-    Image *outputImage;
-    int kernelSize;
-    double sigma;
+    int startRow;
+    int endRow;
+    int width;
+    int height;
+    const Image *image;
+    Image *output;
+    const std::vector<std::vector<double> > *kernel;
 };
 
-DWORD WINAPI BlurThread(LPVOID lpParam) {
-    const auto *data = static_cast<ThreadData *>(lpParam);
-    *data->outputImage = applyGaussianBlur(*data->inputImage, data->kernelSize, data->sigma);
+DWORD WINAPI ThreadProc(LPVOID lpParameter) {
+    auto *data = static_cast<ThreadData *>(lpParameter);
+    int startRow = data->startRow;
+    int endRow = data->endRow;
+    int width = data->width;
+    int height = data->height;
+    const Image *image = data->image;
+    Image *output = data->output;
+    const std::vector<std::vector<double> > *kernel = data->kernel;
+
+    for (int y = startRow; y < endRow; ++y) {
+        for (int x = 0; x < width; ++x) {
+            (*output)[y][x] = applyGaussianBlur(x, y, *image, *kernel, width, height);
+        }
+    }
+
     return 0;
 };
 
@@ -32,34 +48,31 @@ int main(int argc, char *argv[]) {
     std::string outputFile = argv[4];
 
     int width, height;
-    Image pixels;
+    Image image;
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    readBMP(inputFile, width, height, pixels);
+    readBMP(inputFile, width, height, image);
 
-    Image blurredImage(height, std::vector<RGB>(width));
+    Image output = image;
 
     std::vector<HANDLE> threads(numThreads);
     std::vector<ThreadData> threadData(numThreads);
-    std::vector<Image> sourceImagePieces(numThreads);
-    std::vector<Image> blurredImagePieces(numThreads);
     int rowsPerThread = height / numThreads;
     DWORD_PTR affinityMask = (1 << numCores) - 1;
 
+    auto kernel = createGaussianKernel(KERNEL_RADIUS, SIGMA);
+
     for (int i = 0; i < numThreads; ++i) {
-        int startRow = i * rowsPerThread;
-        int endRow = (i == numThreads - 1) ? height : (i + 1) * rowsPerThread;
+        threadData[i].startRow = i * rowsPerThread;
+        threadData[i].endRow = (i == numThreads - 1) ? height : (i + 1) * rowsPerThread;
+        threadData[i].width = width;
+        threadData[i].height = height;
+        threadData[i].image = &image;
+        threadData[i].output = &output;
+        threadData[i].kernel = &kernel;
 
-        sourceImagePieces[i] = Image(pixels.begin() + startRow, pixels.begin() + endRow);
-        blurredImagePieces[i] = Image(endRow - startRow, std::vector<RGB>(width));
-
-        threadData[i].inputImage = &sourceImagePieces[i];
-        threadData[i].outputImage = &blurredImagePieces[i];
-        threadData[i].kernelSize = 50;
-        threadData[i].sigma = 100.0;
-
-        threads[i] = CreateThread(nullptr, 0, BlurThread, &threadData[i], CREATE_SUSPENDED, nullptr);
+        threads[i] = CreateThread(nullptr, 0, ThreadProc, &threadData[i], CREATE_SUSPENDED, nullptr);
 
         if (threads[i] == nullptr) {
             std::cerr << "Failed to create thread " << i << std::endl;
@@ -82,15 +95,7 @@ int main(int argc, char *argv[]) {
         CloseHandle(thread);
     }
 
-    for (int i = 0; i < numThreads; ++i) {
-        int startRow = i * rowsPerThread;
-        for (int j = 0; j < blurredImagePieces[i].size(); ++j) {
-            blurredImage[startRow + j] = blurredImagePieces[i][j];
-        }
-    }
-
-
-    writeBMP(outputFile, width, height, blurredImage);
+    writeBMP(outputFile, width, height, output);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;

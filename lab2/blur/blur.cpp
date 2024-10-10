@@ -1,53 +1,60 @@
 #include "blur.h"
 
-Image applyGaussianBlur(const Image &input, int kernelSize, double sigma) {
-    int height = input.size();
-    int width = input[0].size();
-    Image output = input;
+#include <cmath>
 
-    // Создание ядра Гаусса
-    std::vector<std::vector<double> > kernel(kernelSize, std::vector<double>(kernelSize));
+std::vector<std::vector<double> > createGaussianKernel(int radius, double sigma) {
+    int size = 2 * radius + 1;
+    std::vector<std::vector<double> > kernel(size, std::vector<double>(size));
     double sum = 0.0;
-    int halfSize = kernelSize / 2;
-    double sigma2 = 2 * sigma * sigma;
 
-    for (int i = -halfSize; i < halfSize; ++i) {
-        for (int j = -halfSize; j < halfSize; ++j) {
-            kernel[i + halfSize][j + halfSize] = std::exp(-(i * i + j * j) / sigma2) / (M_PI * sigma2);
-            sum += kernel[i + halfSize][j + halfSize];
+    for (int y = -radius; y <= radius; ++y) {
+        for (int x = -radius; x <= radius; ++x) {
+            double exponent = -(x * x + y * y) / (2 * sigma * sigma);
+            kernel[y + radius][x + radius] = std::exp(exponent) / (2 * M_PI * sigma * sigma);
+            sum += kernel[y + radius][x + radius];
         }
     }
 
-    // Проверка суммы
     if (sum == 0.0) {
         sum = 1.0;
     }
 
     // Нормализация ядра
-    for (int i = 0; i < kernelSize; ++i) {
-        for (int j = 0; j < kernelSize; ++j) {
-            kernel[i][j] /= sum;
+    for (int y = 0; y < size; ++y) {
+        for (int x = 0; x < size; ++x) {
+            kernel[y][x] /= sum;
         }
     }
 
-    // Применение размытия по Гауссу с отражением краев
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            double blue = 0.0, green = 0.0, red = 0.0;
-            for (int i = -halfSize; i < halfSize; ++i) {
-                for (int j = -halfSize; j < halfSize; ++j) {
-                    int yy = std::min(std::max(y + i, 0), height - 1);
-                    int xx = std::min(std::max(x + j, 0), width - 1);
-                    blue += input[yy][xx].blue * kernel[i + halfSize][j + halfSize];
-                    green += input[yy][xx].green * kernel[i + halfSize][j + halfSize];
-                    red += input[yy][xx].red * kernel[i + halfSize][j + halfSize];
-                }
-            }
-            output[y][x].blue = static_cast<uint8_t>(blue);
-            output[y][x].green = static_cast<uint8_t>(green);
-            output[y][x].red = static_cast<uint8_t>(red);
+    return kernel;
+}
+
+int reflect(int index, int max) {
+    if (index < 0) return -index;
+    if (index >= max) return 2 * max - index - 1;
+    return index;
+}
+
+RGB applyGaussianBlur(int x, int y, const Image &image, const std::vector<std::vector<double> > &kernel, int width,
+                      int height) {
+    double red = 0, green = 0, blue = 0;
+    int radius = KERNEL_RADIUS;
+
+    for (int ky = -radius; ky <= radius; ++ky) {
+        for (int kx = -radius; kx <= radius; ++kx) {
+            int ny = reflect(y + ky, height);
+            int nx = reflect(x + kx, width);
+            const RGB &pixel = image[ny][nx];
+            double weight = kernel[ky + radius][kx + radius];
+            red += pixel.red * weight;
+            green += pixel.green * weight;
+            blue += pixel.blue * weight;
         }
     }
 
-    return output;
+    RGB result;
+    result.red = static_cast<uint8_t>(red);
+    result.green = static_cast<uint8_t>(green);
+    result.blue = static_cast<uint8_t>(blue);
+    return result;
 }

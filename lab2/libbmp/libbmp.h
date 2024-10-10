@@ -1,10 +1,9 @@
 #ifndef LIBBMP_H
 #define LIBBMP_H
 
-#include <iostream>
-#include <fstream>
-#include <vector>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #pragma pack(push, 1)
 struct BMPFileHeader {
