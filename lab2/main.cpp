@@ -59,7 +59,6 @@ int main(int argc, char *argv[]) {
     std::vector<HANDLE> threads(numThreads);
     std::vector<ThreadData> threadData(numThreads);
     int rowsPerThread = height / numThreads;
-    DWORD_PTR affinityMask = (1 << numCores) - 1;
 
     auto kernel = createGaussianKernel(KERNEL_RADIUS, SIGMA);
 
@@ -79,6 +78,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
+        DWORD_PTR affinityMask = (1 << i % numCores);
         SetThreadAffinityMask(threads[i], affinityMask);
     }
 
