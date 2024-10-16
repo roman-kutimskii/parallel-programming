@@ -64,7 +64,16 @@ int main(const int argc, char *argv[]) {
             threadNum.reset();
             return 1;
         }
+
+        if (i == 0) {
+            if (!SetThreadPriority(threads[i], THREAD_PRIORITY_HIGHEST)) {
+                std::cerr << "Error: unable to set thread priority for thread " << i + 1 << std::endl;
+            }
+        }
     }
+
+    std::cout << "Press Enter to continue..." << std::endl;
+    std::cin.get();
 
     for (const HANDLE &thread: threads) {
         if (ResumeThread(thread) == static_cast<DWORD>(-1)) {
