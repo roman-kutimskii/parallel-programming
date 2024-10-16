@@ -1,16 +1,33 @@
 #include <iostream>
 #include <memory>
-#include <syncstream>
 #include <vector>
 #include <windows.h>
+#include <fstream>
+#include <sstream>
 
 DWORD WINAPI MyThreadFunction(LPVOID lpParam) {
-    auto syncStream = std::osyncstream(std::cout);
     auto threadNumPtr = std::unique_ptr<int>(static_cast<int *>(lpParam));
     const int threadNum = *threadNumPtr;
-    syncStream << "Thread #" << threadNum << " is running..." << std::endl;
-    Sleep(1000);
-    syncStream << "Thread #" << threadNum << " is terminating..." << std::endl;
+
+    std::ostringstream filename;
+    filename << "thread_" << threadNum << ".txt";
+    std::ofstream outFile(filename.str());
+
+    if (!outFile.is_open()) {
+        std::cerr << "Error: unable to open file for thread " << threadNum << std::endl;
+        return 1;
+    }
+
+    for (int i = 0; i < 20; ++i) {
+        DWORD currentTime = GetTickCount();
+        outFile << threadNum << "|" << currentTime << std::endl;
+        for (int j = 0; j < 1'000'000; ++j) {
+            for (int k = 0; k < 10'000; ++k) {
+            }
+        }
+    }
+
+    outFile.close();
     return 0;
 }
 
