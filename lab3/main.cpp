@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 #include <windows.h>
+#include <timeapi.h>
 #include <fstream>
 #include <sstream>
 
@@ -19,10 +20,10 @@ DWORD WINAPI MyThreadFunction(LPVOID lpParam) {
     }
 
     for (int i = 0; i < 20; ++i) {
-        DWORD currentTime = GetTickCount();
+        DWORD currentTime = timeGetTime();
         outFile << threadNum << "|" << currentTime << std::endl;
         for (int j = 0; j < 1'000'000; ++j) {
-            for (int k = 0; k < 10'000; ++k) {
+            for (int k = 0; k < 1'000; ++k) {
             }
         }
     }
