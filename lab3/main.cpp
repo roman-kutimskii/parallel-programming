@@ -33,8 +33,8 @@ DWORD WINAPI MyThreadFunction(LPVOID lpParam) {
 }
 
 int main(const int argc, char *argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <number_of_threads>" << std::endl;
+    if (argc < 2 || argc > 3) {
+        std::cerr << "Usage: " << argv[0] << " <number_of_threads> [priority_thread_number]" << std::endl;
         return 1;
     }
 
@@ -54,6 +54,23 @@ int main(const int argc, char *argv[]) {
         return 1;
     }
 
+    int priorityThreadNum = -1;
+    if (argc == 3) {
+        try {
+            priorityThreadNum = std::stoi(argv[2]);
+            if (priorityThreadNum < 1 || priorityThreadNum > numThreads) {
+                std::cerr << "Invalid priority thread number: " << argv[2] << std::endl;
+                return 1;
+            }
+        } catch (const std::invalid_argument &e) {
+            std::cerr << "Invalid priority thread number: " << argv[2] << std::endl;
+            return 1;
+        } catch (const std::out_of_range &e) {
+            std::cerr << "Priority thread number out of range: " << argv[2] << std::endl;
+            return 1;
+        }
+    }
+
     std::vector<HANDLE> threads(numThreads);
 
     for (int i = 0; i < numThreads; ++i) {
@@ -66,7 +83,7 @@ int main(const int argc, char *argv[]) {
             return 1;
         }
 
-        if (i == 0) {
+        if (priorityThreadNum == i + 1) {
             if (!SetThreadPriority(threads[i], THREAD_PRIORITY_HIGHEST)) {
                 std::cerr << "Error: unable to set thread priority for thread " << i + 1 << std::endl;
             }
