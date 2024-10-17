@@ -13,7 +13,7 @@ DWORD WINAPI MyThreadFunction(LPVOID lpParam) {
     std::ostringstream filename;
     filename << "thread_" << threadNum << ".txt";
     std::ofstream outFile(filename.str());
-
+    std::ostringstream output;
     if (!outFile.is_open()) {
         std::cerr << "Error: unable to open file for thread " << threadNum << std::endl;
         return 1;
@@ -21,12 +21,14 @@ DWORD WINAPI MyThreadFunction(LPVOID lpParam) {
 
     for (int i = 0; i < 20; ++i) {
         DWORD currentTime = timeGetTime();
-        outFile << threadNum << "|" << currentTime << std::endl;
+        output << threadNum << "|" << currentTime << std::endl;
         for (int j = 0; j < 1'000'000; ++j) {
             for (int k = 0; k < 1'000; ++k) {
             }
         }
     }
+
+    outFile << output.str();
 
     outFile.close();
     return 0;
