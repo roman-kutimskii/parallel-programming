@@ -20,12 +20,12 @@ DWORD WINAPI MyThreadFunction(LPVOID lpParam) {
     }
 
     for (int i = 0; i < 20; ++i) {
-        DWORD currentTime = timeGetTime();
-        output << threadNum << "|" << currentTime << std::endl;
         for (int j = 0; j < 1'000'000; ++j) {
             for (int k = 0; k < 1'000; ++k) {
             }
         }
+        DWORD currentTime = timeGetTime();
+        output << threadNum << "|" << currentTime << std::endl;
     }
 
     outFile << output.str();
