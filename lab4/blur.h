@@ -5,7 +5,7 @@
 
 #include "bmp.h"
 
-const int KERNEL_RADIUS = 10; // Радиус ядра
+const int KERNEL_RADIUS = 1; // Радиус ядра
 const double SIGMA = 10.0;
 
 std::vector<std::vector<double> > createGaussianKernel(int radius, double sigma) {
