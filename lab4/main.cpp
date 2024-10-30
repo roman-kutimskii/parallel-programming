@@ -15,7 +15,7 @@ struct ThreadData {
     Image *output;
     const std::vector<std::vector<double> > *kernel;
     int threadId;
-    std::vector<std::pair<long long, int> > *timingData;
+    std::vector<std::pair<int, long long> > *timingData;
 };
 
 DWORD WINAPI ThreadProc(LPVOID lpParameter) {
@@ -33,11 +33,13 @@ DWORD WINAPI ThreadProc(LPVOID lpParameter) {
     for (int y = startRow; y < endRow; ++y) {
         for (int x = 0; x < width; ++x) {
             auto pixelStart = std::chrono::high_resolution_clock::now();
-            (*output)[y][x] = applyGaussianBlur(x, y, *image, *kernel, width, height);
+            for (int i = 0; i < 200'000; ++i) {
+                (*output)[y][x] = applyGaussianBlur(x, y, *image, *kernel, width, height);
+            }
             auto pixelEnd = std::chrono::high_resolution_clock::now();
             long long timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(pixelEnd - pixelStart).
                     count();
-            timingData->emplace_back(timeElapsed, threadId);
+            timingData->emplace_back(threadId, timeElapsed);
         }
     }
 
@@ -71,7 +73,7 @@ int main(int argc, char *argv[]) {
 
     auto kernel = createGaussianKernel(KERNEL_RADIUS, SIGMA);
 
-    std::vector<std::pair<long long, int> > timingData;
+    std::vector<std::pair<int, long long> > timingData;
 
     for (int i = 0; i < numThreads; ++i) {
         threadData[i].startRow = i * rowsPerThread;
@@ -94,25 +96,25 @@ int main(int argc, char *argv[]) {
         DWORD_PTR affinityMask = (1 << i % numCores);
         SetThreadAffinityMask(threads[i], affinityMask);
 
-        // int priority;
-        // switch (i) {
-        //     case 0:
-        //         priority = THREAD_PRIORITY_ABOVE_NORMAL;
-        //         break;
-        //     case 1:
-        //         priority = THREAD_PRIORITY_NORMAL;
-        //         break;
-        //     case 2:
-        //         priority = THREAD_PRIORITY_BELOW_NORMAL;
-        //         break;
-        //     default:
-        //         priority = THREAD_PRIORITY_NORMAL;
-        //         break;
-        // }
-        // if (!SetThreadPriority(threads[i], priority)) {
-        //     std::cerr << "Failed to set thread priority for thread " << i << std::endl;
-        //     return 1;
-        // }
+        int priority;
+        switch (i) {
+            case 0:
+                priority = THREAD_PRIORITY_ABOVE_NORMAL;
+                break;
+            case 1:
+                priority = THREAD_PRIORITY_NORMAL;
+                break;
+            case 2:
+                priority = THREAD_PRIORITY_BELOW_NORMAL;
+                break;
+            default:
+                priority = THREAD_PRIORITY_NORMAL;
+                break;
+        }
+        if (!SetThreadPriority(threads[i], priority)) {
+            std::cerr << "Failed to set thread priority for thread " << i << std::endl;
+            return 1;
+        }
     }
 
     for (const HANDLE &thread: threads) {
@@ -137,7 +139,7 @@ int main(int argc, char *argv[]) {
 
     std::ofstream logFile("timing.log");
     for (const auto &timing: timingData) {
-        logFile << timing.second << "\t" << timing.first << std::endl;
+        logFile << timing.first << "\t" << timing.second << std::endl;
     }
 
     return 0;
