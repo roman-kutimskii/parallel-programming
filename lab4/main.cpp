@@ -137,6 +137,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << numCores << "\t" << numThreads << "\t" << elapsed.count() << std::endl;
 
+    std::sort(timingData.begin(), timingData.end());
     std::ofstream logFile("timing.log");
     for (const auto &timing: timingData) {
         logFile << timing.first << "\t" << timing.second << std::endl;
