@@ -15,7 +15,7 @@ struct ThreadData {
     Image *output;
     const std::vector<std::vector<double> > *kernel;
     int threadId;
-    std::vector<std::pair<int, long long> > *timingData;
+    std::vector<std::pair<int, std::chrono::time_point<std::chrono::system_clock> > > *timingData;
 };
 
 DWORD WINAPI ThreadProc(LPVOID lpParameter) {
@@ -32,14 +32,11 @@ DWORD WINAPI ThreadProc(LPVOID lpParameter) {
 
     for (int y = startRow; y < endRow; ++y) {
         for (int x = 0; x < width; ++x) {
-            auto pixelStart = std::chrono::high_resolution_clock::now();
             for (int i = 0; i < 200'000; ++i) {
                 (*output)[y][x] = applyGaussianBlur(x, y, *image, *kernel, width, height);
             }
             auto pixelEnd = std::chrono::high_resolution_clock::now();
-            long long timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(pixelEnd - pixelStart).
-                    count();
-            timingData->emplace_back(threadId, timeElapsed);
+            timingData->emplace_back(threadId, pixelEnd);
         }
     }
 
@@ -61,8 +58,6 @@ int main(int argc, char *argv[]) {
     int width, height;
     Image image;
 
-    auto start = std::chrono::high_resolution_clock::now();
-
     readBMP(inputFile, width, height, image);
 
     Image output = image;
@@ -73,7 +68,8 @@ int main(int argc, char *argv[]) {
 
     auto kernel = createGaussianKernel(KERNEL_RADIUS, SIGMA);
 
-    std::vector<std::pair<int, long long> > timingData;
+    std::vector<std::pair<int, std::chrono::time_point<std::chrono::system_clock> > > timingData;
+    DWORD_PTR affinityMask = (1 << numCores) - 1;
 
     for (int i = 0; i < numThreads; ++i) {
         threadData[i].startRow = i * rowsPerThread;
@@ -93,7 +89,6 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        DWORD_PTR affinityMask = (1 << i % numCores);
         SetThreadAffinityMask(threads[i], affinityMask);
 
         int priority;
@@ -117,6 +112,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     for (const HANDLE &thread: threads) {
         if (ResumeThread(thread) == static_cast<DWORD>(-1)) {
             std::cerr << "Error: unable to resume thread" << std::endl;
@@ -132,15 +129,25 @@ int main(int argc, char *argv[]) {
 
     writeBMP(outputFile, width, height, output);
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-
-    std::cout << numCores << "\t" << numThreads << "\t" << elapsed.count() << std::endl;
-
     std::sort(timingData.begin(), timingData.end());
-    std::ofstream logFile("timing.log");
-    for (const auto &timing: timingData) {
-        logFile << timing.first << "\t" << timing.second << std::endl;
+    std::ofstream logFile0("timing0.log");
+    std::ofstream logFile1("timing1.log");
+    std::ofstream logFile2("timing2.log");
+    for (const auto &[fst, snd]: timingData) {
+        long long timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(snd - start).count();
+        switch (fst) {
+            case 0:
+                logFile0 << timeElapsed << std::endl;
+                break;
+            case 1:
+                logFile1 << timeElapsed << std::endl;
+                break;
+            case 2:
+                logFile2 << timeElapsed << std::endl;
+                break;
+            default:
+                break;
+        }
     }
 
     return 0;
