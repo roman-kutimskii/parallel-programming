@@ -3,14 +3,13 @@
 #include <fstream>
 #include <vector>
 
-CRITICAL_SECTION FileLockingCriticalSection;
+HANDLE FileMutex;
 
 int ReadFromFile() {
     std::fstream myfile("balance.txt", std::ios_base::in);
     int result;
     myfile >> result;
     myfile.close();
-
     return result;
 }
 
@@ -26,7 +25,7 @@ int GetBalance() {
 }
 
 void Deposit(int money) {
-    EnterCriticalSection(&FileLockingCriticalSection);
+    WaitForSingleObject(FileMutex, INFINITE);
 
     int balance = GetBalance();
     balance += money;
@@ -34,15 +33,15 @@ void Deposit(int money) {
     WriteToFile(balance);
     printf("Balance after deposit: %d\n", balance);
 
-    LeaveCriticalSection(&FileLockingCriticalSection);
+    ReleaseMutex(FileMutex);
 }
 
 void Withdraw(int money) {
-    EnterCriticalSection(&FileLockingCriticalSection);
+    WaitForSingleObject(FileMutex, INFINITE);
 
     if (GetBalance() < money) {
         printf("Cannot withdraw money, balance lower than %d\n", money);
-        LeaveCriticalSection(&FileLockingCriticalSection);
+        ReleaseMutex(FileMutex);
         return;
     }
 
@@ -52,7 +51,7 @@ void Withdraw(int money) {
     WriteToFile(balance);
     printf("Balance after withdraw: %d\n", balance);
 
-    LeaveCriticalSection(&FileLockingCriticalSection);
+    ReleaseMutex(FileMutex);
 }
 
 DWORD WINAPI DoDeposit(LPVOID lpParameter) {
@@ -66,14 +65,19 @@ DWORD WINAPI DoWithdraw(LPVOID lpParameter) {
 }
 
 int main() {
-    std::vector<HANDLE> handles(150);
+    std::vector<HANDLE> handles(50);
+    
+    FileMutex = CreateMutex(nullptr, FALSE, "Global\\FileMutex");
 
-    InitializeCriticalSection(&FileLockingCriticalSection);
+    if (FileMutex == nullptr) {
+        printf("CreateMutex error: %d\n", GetLastError());
+        return 1;
+    }
 
     WriteToFile(0);
 
     SetProcessAffinityMask(GetCurrentProcess(), 1);
-    for (int i = 0; i < 150; i++) {
+    for (int i = 0; i < 50; i++) {
         handles[i] = i % 2 == 0
                          ? CreateThread(nullptr, 0, &DoDeposit, reinterpret_cast<LPVOID>(230), CREATE_SUSPENDED,
                                         nullptr)
@@ -82,14 +86,12 @@ int main() {
         ResumeThread(handles[i]);
     }
 
-
-    // ожидание окончания работы двух потоков
     WaitForMultipleObjects(50, handles.data(), true, INFINITE);
     printf("Final Balance: %d\n", GetBalance());
 
     getchar();
 
-    DeleteCriticalSection(&FileLockingCriticalSection);
+    CloseHandle(FileMutex);
 
     return 0;
 }
