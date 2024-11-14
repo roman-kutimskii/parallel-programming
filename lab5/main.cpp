@@ -66,7 +66,7 @@ DWORD WINAPI DoWithdraw(LPVOID lpParameter) {
 
 int main() {
     std::vector<HANDLE> handles(50);
-    
+
     FileMutex = CreateMutex(nullptr, FALSE, "Global\\FileMutex");
 
     if (FileMutex == nullptr) {
