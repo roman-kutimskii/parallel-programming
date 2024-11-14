@@ -6,22 +6,18 @@
 CRITICAL_SECTION FileLockingCriticalSection;
 
 int ReadFromFile() {
-    EnterCriticalSection(&FileLockingCriticalSection);
     std::fstream myfile("balance.txt", std::ios_base::in);
     int result;
     myfile >> result;
     myfile.close();
-    LeaveCriticalSection(&FileLockingCriticalSection);
 
     return result;
 }
 
 void WriteToFile(int data) {
-    EnterCriticalSection(&FileLockingCriticalSection);
     std::fstream myfile("balance.txt", std::ios_base::out);
     myfile << data << std::endl;
     myfile.close();
-    LeaveCriticalSection(&FileLockingCriticalSection);
 }
 
 int GetBalance() {
@@ -70,14 +66,14 @@ DWORD WINAPI DoWithdraw(LPVOID lpParameter) {
 }
 
 int main() {
-    std::vector<HANDLE> handles(50);
+    std::vector<HANDLE> handles(150);
 
     InitializeCriticalSection(&FileLockingCriticalSection);
 
     WriteToFile(0);
 
     SetProcessAffinityMask(GetCurrentProcess(), 1);
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 150; i++) {
         handles[i] = i % 2 == 0
                          ? CreateThread(nullptr, 0, &DoDeposit, reinterpret_cast<LPVOID>(230), CREATE_SUSPENDED,
                                         nullptr)
