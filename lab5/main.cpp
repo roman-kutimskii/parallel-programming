@@ -1,8 +1,7 @@
 #include <windows.h>
 #include <string>
-#include <iostream>
-#include "tchar.h"
 #include <fstream>
+#include <vector>
 
 CRITICAL_SECTION FileLockingCriticalSection;
 
@@ -61,8 +60,8 @@ DWORD WINAPI DoWithdraw(LPVOID lpParameter) {
     ExitThread(0);
 }
 
-int _tmain(int argc, _TCHAR *argv[]) {
-    HANDLE *handles = new HANDLE[49];
+int main() {
+    std::vector<HANDLE> handles(50);
 
     InitializeCriticalSection(&FileLockingCriticalSection);
 
@@ -70,15 +69,17 @@ int _tmain(int argc, _TCHAR *argv[]) {
 
     SetProcessAffinityMask(GetCurrentProcess(), 1);
     for (int i = 0; i < 50; i++) {
-        handles[i] = (i % 2 == 0)
-                         ? CreateThread(NULL, 0, &DoDeposit, (LPVOID) 230, CREATE_SUSPENDED, NULL)
-                         : CreateThread(NULL, 0, &DoWithdraw, (LPVOID) 1000, CREATE_SUSPENDED, NULL);
+        handles[i] = i % 2 == 0
+                         ? CreateThread(nullptr, 0, &DoDeposit, reinterpret_cast<LPVOID>(230), CREATE_SUSPENDED,
+                                        nullptr)
+                         : CreateThread(nullptr, 0, &DoWithdraw, reinterpret_cast<LPVOID>(1000), CREATE_SUSPENDED,
+                                        nullptr);
         ResumeThread(handles[i]);
     }
 
 
     // ожидание окончания работы двух потоков
-    WaitForMultipleObjects(50, handles, true, INFINITE);
+    WaitForMultipleObjects(50, handles.data(), true, INFINITE);
     printf("Final Balance: %d\n", GetBalance());
 
     getchar();
