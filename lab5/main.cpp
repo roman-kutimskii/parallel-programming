@@ -25,20 +25,14 @@ int GetBalance() {
 }
 
 void Deposit(int money) {
-    WaitForSingleObject(FileMutex, INFINITE);
-
     int balance = GetBalance();
     balance += money;
 
     WriteToFile(balance);
     printf("Balance after deposit: %d\n", balance);
-
-    ReleaseMutex(FileMutex);
 }
 
 void Withdraw(int money) {
-    WaitForSingleObject(FileMutex, INFINITE);
-
     if (GetBalance() < money) {
         printf("Cannot withdraw money, balance lower than %d\n", money);
         ReleaseMutex(FileMutex);
@@ -50,17 +44,19 @@ void Withdraw(int money) {
     balance -= money;
     WriteToFile(balance);
     printf("Balance after withdraw: %d\n", balance);
-
-    ReleaseMutex(FileMutex);
 }
 
 DWORD WINAPI DoDeposit(LPVOID lpParameter) {
+    WaitForSingleObject(FileMutex, INFINITE);
     Deposit(static_cast<int>(reinterpret_cast<size_t>(lpParameter)));
+    ReleaseMutex(FileMutex);
     ExitThread(0);
 }
 
 DWORD WINAPI DoWithdraw(LPVOID lpParameter) {
+    WaitForSingleObject(FileMutex, INFINITE);
     Withdraw(static_cast<int>(reinterpret_cast<size_t>(lpParameter)));
+    ReleaseMutex(FileMutex);
     ExitThread(0);
 }
 
