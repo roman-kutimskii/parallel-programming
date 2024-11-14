@@ -51,13 +51,13 @@ void Withdraw(int money) {
     printf("Balance after withdraw: %d\n", balance);
 }
 
-DWORD WINAPI DoDeposit(CONST LPVOID lpParameter) {
-    Deposit((int) lpParameter);
+DWORD WINAPI DoDeposit(LPVOID lpParameter) {
+    Deposit(static_cast<int>(reinterpret_cast<size_t>(lpParameter)));
     ExitThread(0);
 }
 
-DWORD WINAPI DoWithdraw(CONST LPVOID lpParameter) {
-    Withdraw((int) lpParameter);
+DWORD WINAPI DoWithdraw(LPVOID lpParameter) {
+    Withdraw(static_cast<int>(reinterpret_cast<size_t>(lpParameter)));
     ExitThread(0);
 }
 
