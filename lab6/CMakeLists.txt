@@ -5,8 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 find_package(OpenMP REQUIRED)
 
-add_executable(lab6-1 task1.cpp
-        task2.cpp)
+add_executable(lab6-1 task1.cpp)
 add_executable(lab6-2 task2.cpp)
 
 target_link_libraries(lab6-1 OpenMP::OpenMP_CXX)
