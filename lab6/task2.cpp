@@ -4,7 +4,7 @@
 
 int main() {
     int x = 44;
-#pragma omp parallel for private(x)
+// #pragma omp parallel for private(x)
 // #pragma omp parallel for firstprivate(x) для наглядности можно заменить `=` на `+=`
 // #pragma omp parallel for lastprivate(x)
     for (int i = 0; i <= 10; i++) {
