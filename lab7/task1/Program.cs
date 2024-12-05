@@ -16,7 +16,7 @@ try
 {
     var content = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
     Console.WriteLine("Введите символы для удаления:");
-    var charsToRemove = Console.ReadLine(); // а б в г д е ё ж з и й к л м н о п р с т у ф х ц ч ш щ ъ ы ь э ю
+    var charsToRemove = Console.ReadLine(); // абвгдеёжзийклмнопрстуфхцчшщъыьэю
 
     if (string.IsNullOrWhiteSpace(charsToRemove) || string.IsNullOrWhiteSpace(content))
     {
